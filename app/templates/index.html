@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Construction Site Monitoring Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">Construction Site Safety Monitoring Dashboard</span>
+            <div class="navbar-nav d-flex flex-row">
+                <a class="nav-link text-white me-3" href="/">Dashboard</a>
+                <a class="nav-link text-white" href="/violations">Violation Analysis</a>
+            </div>
+            <div class="navbar-text text-white">
+                <div id="status-indicator" class="status-indicator status-ok"></div>
+                <span id="connection-status">Connected</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-3">
+        <div class="row">
+            <div class="col-md-9">
+                <div class="row">
+                    <!-- Camera Grid -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Camera 1</h5>
+                                <span id="camera-0-status" class="badge bg-success">Online</span>
+                            </div>
+                            <div class="card-body p-0">
+                                <img src="{{ url_for('main.video_feed', camera_id=0) }}" class="camera-feed" alt="Camera 1">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Camera 2</h5>
+                                <span id="camera-1-status" class="badge bg-success">Online</span>
+                            </div>
+                            <div class="card-body p-0">
+                                <img src="{{ url_for('main.video_feed', camera_id=1) }}" class="camera-feed" alt="Camera 2">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Camera 3</h5>
+                                <span id="camera-2-status" class="badge bg-success">Online</span>
+                            </div>
+                            <div class="card-body p-0">
+                                <img src="{{ url_for('main.video_feed', camera_id=2) }}" class="camera-feed" alt="Camera 3">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Camera 4</h5>
+                                <span id="camera-3-status" class="badge bg-success">Online</span>
+                            </div>
+                            <div class="card-body p-0">
+                                <img src="{{ url_for('main.video_feed', camera_id=3) }}" class="camera-feed" alt="Camera 4">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Alert Panel -->
+            <div class="col-md-3">
+                <div class="card alert-panel">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0">Safety Alerts</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="nav nav-tabs" id="alertTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="safety-tab" data-bs-toggle="tab" data-bs-target="#safety" type="button" role="tab" aria-controls="safety" aria-selected="true">Safety Gear</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="proximity-tab" data-bs-toggle="tab" data-bs-target="#proximity" type="button" role="tab" aria-controls="proximity" aria-selected="false">Proximity</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content p-3" id="alertTabsContent">
+                            <div class="tab-pane fade show active" id="safety" role="tabpanel" aria-labelledby="safety-tab">
+                                <div id="safety-alerts" class="alert-list">
+                                    <div class="alert alert-info">No safety gear violations detected.</div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="proximity" role="tabpanel" aria-labelledby="proximity-tab">
+                                <div id="proximity-alerts" class="alert-list">
+                                    <div class="alert alert-info">No proximity alerts detected.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button id="test-alert" class="btn btn-warning btn-sm">Test Alert</button>
+                        <button id="clear-alerts" class="btn btn-secondary btn-sm">Clear Alerts</button>
+                    </div>
+                </div>
+                
+                <!-- Stats Panel -->
+                <div class="card mt-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Safety Compliance Rate</label>
+                            <div class="progress">
+                                <div id="safety-rate" class="progress-bar bg-success" role="progressbar" style="width: 85%;" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100">85%</div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Proximity Alert Frequency</label>
+                            <div class="progress">
+                                <div id="proximity-rate" class="progress-bar bg-warning" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">25%</div>
+                            </div>
+                        </div>
+                        <div class="small text-muted">
+                            <div>Total Detected Workers: <span id="total-workers">0</span></div>
+                            <div>Active Violations: <span id="active-violations">0</span></div>
+                            <div>Last Updated: <span id="last-updated">-</span></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Settings Panel -->
+                <div class="card mt-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="toggle-audio" checked>
+                            <label class="form-check-label" for="toggle-audio">Alert Sound</label>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="toggle-safety" checked>
+                            <label class="form-check-label" for="toggle-safety">Safety Detection</label>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="toggle-proximity" checked>
+                            <label class="form-check-label" for="toggle-proximity">Proximity Detection</label>
+                        </div>
+                        <button id="refresh-cameras" class="btn btn-primary btn-sm mt-2">Refresh Cameras</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Alert Sound -->
+    <audio id="alert-sound" src="https://assets.coderrocketfuel.com/pomodoro-times-up.mp3"></audio>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html> 

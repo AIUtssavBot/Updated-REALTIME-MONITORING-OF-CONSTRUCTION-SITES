@@ -1,0 +1,8 @@
+Flask
+opencv-python
+numpy
+scikit-learn
+imutils
+requests
+python-dotenv
+Flask-SocketIO 
